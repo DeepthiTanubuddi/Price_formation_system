@@ -1,0 +1,5 @@
+product_name,store,expected_cheapest_store,expected_unit_price_per_g
+jasmine rice,Walmart,Walmart,0.001678
+large eggs,Target,Target,0.001555
+lunchables turkey,Walmart,Walmart,0.000011
+arizona diet green tea,Target,Target,0.000051

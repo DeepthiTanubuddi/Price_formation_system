@@ -1,0 +1,113 @@
+product_name,store,price,quantity,unit,category
+Friendly Farms 2% Milk,Aldi,,,unit,milk
+2% Reduced Fat Milk,Kroger,,,unit,milk
+Great Value 2 Reduced Fat Milk,Walmart,,,unit,milk
+Kroger 2% Reduced Fat Milk,Ruler,,,unit,milk
+"Woeber's White Vinegar, Distilled, 5% Acidity",Aldi,,,unit,vinegar
+Distilled White Vinegar,Kroger,,,unit,vinegar
+Great Value Distilled White Vinegar,Walmart,,,unit,vinegar
+Distilled White Vinegar,Ruler,,,unit,vinegar
+73/27 Ground Beef Roll,Aldi,,,unit,ground beef
+73/27 Ground Beef Roll,Kroger,,,unit,ground beef
+"All Natura, 73 Lean/27 Fat, Ground Beef, Roll, 3lbs",Walmart,,,unit,ground beef
+Kroger 73% Lean Ground Beef,Ruler,,,unit,ground beef
+L'oven Fresh Honey Wheat Bread,Aldi,,,unit,bread
+Honey Wheat Bread,Kroger,,,unit,bread
+Great Value 100% Whole Wheat & Honey Bread,Walmart,,,unit,bread
+Kroger Wheat Bread,Ruler,,,unit,bread
+L'oven Fresh Blueberry Bagels,Aldi,,,unit,bagels
+Blueberry Bagels,Kroger,,,unit,bagels
+Thomas’ Plain Bagels,Walmart,,,unit,bagels
+Kroger Pre-Sliced Plain Bagels,Ruler,,,unit,bagels
+Avocado,Aldi,,,unit,avocado
+Medium Avocado,Kroger,,,unit,avocado
+Avocado,Walmart,,,unit,avocado
+Avocado,Ruler,,,unit,avocado
+Great Gherkins Kosher Dill Spears,Aldi,,,unit,pickles
+Zesty Kosher Dill Pickle Spears,Kroger,,,unit,pickles
+Mt. Olive Kosher Dill Pickle Spear,Walmart,,,unit,pickles
+TOPEMS KSHR DLL SPRS,Ruler,,,unit,pickles
+Burman's Original BBQ Sauce,Aldi,,,unit,bbq sauce
+Sweet & Tangy BBQ Sauce,Kroger,,,unit,bbq sauce
+Great Value Original Barbecue Sauce,Walmart,,,unit,bbq sauce
+"Kroger Barbecue Sauce, Original, Traditional",Ruler,,,unit,bbq sauce
+"Reggano Tomato, Basil and Garlic Pasta Sauce",Aldi,,,unit,spaghetti sauce
+Marinara Pasta Sauce,Kroger,,,unit,spaghetti sauce
+Great Value Traditional Pasta Sauce,Walmart,,,unit,spaghetti sauce
+"Kroger Pasta Sauce, Homestyle, Tomato & Basil",Ruler,,,unit,spaghetti sauce
+Reggano Spaghetti,Aldi,,,unit,spaghetti
+Spaghetti,Kroger,,,unit,spaghetti
+Spaghetti (32oz),Walmart,,,unit,spaghetti
+"Kroger Enriched Macaroni Product, Spaghetti",Ruler,,,unit,spaghetti
+Baker's Corner All Purpose Flour,Aldi,,,unit,flour
+Bleached All Purpose Enriched Flour,Kroger,,,unit,flour
+"Great Value All-Purpose Flour, 5LB Bag",Walmart,,,unit,flour
+Kroger Bleached All Purpose Enriched Flour,Ruler,,,unit,flour
+Carlini Vegetable Oil,Aldi,,,unit,veg oil
+Vegetable Oil,Kroger,,,unit,veg oil
+"Great Value Vegetable Oil, 48 fl oz",Walmart,,,unit,veg oil
+"Kroger Vegetable Oil, Pure",Ruler,,,unit,veg oil
+Chef's Cupboard Reduced Sodium Chicken Broth,Aldi,,,unit,broth
+Beef Broth,Kroger,,,unit,broth
+"Great Value Beef Broth, 32 oz",Walmart,,,unit,broth
+Kroger Chicken Broth,Ruler,,,unit,broth
+Stonemill Onion Powder,Aldi,,,unit,spices
+Smidge and Spoon Garlic Powder,Kroger,,,unit,spices
+"Great Value Garlic Powder, 3.4 oz",Walmart,,,unit,spices
+"Smidge and Spoon Spices, Onion Powder",Ruler,,,unit,spices
+Casa Mamita Diced Tomatoes with Green Chilies,Aldi,,,unit,diced tomatoes and peppers
+Chili Ready Diced Tomatoes,Kroger,,,unit,diced tomatoes and peppers
+"Great Value Mild Diced Tomatoes with Green Chilies, 10 Oz",Walmart,,,unit,diced tomatoes and peppers
+Kroger Original Diced Tomatoes With Green Chilies,Ruler,,,unit,diced tomatoes and peppers
+Happy Harvest Whole Kernel Corn,Aldi,,,unit,vegetables
+Whole Kernel Corn,Kroger,,,unit,vegetables
+"Great Value Whole Kernel Corn, Canned Vegetables,",Walmart,,,unit,vegetables
+"Kroger Corn, Sweet Golden, Whole Kernel",Ruler,,,unit,vegetables
+Earthly Grains Instant White Rice,Aldi,,,unit,rice
+Instant Microwaveable White Rice,Kroger,,,unit,rice
+"Great Value Instant White Rice, 28 oz",Walmart,,,unit,rice
+Kroger Instant Microwaveable White Rice,Ruler,,,unit,rice
+Beaumont Classic Roast Ground Coffee,Aldi,,,unit,coffee
+Ground Coffee,Kroger,,,unit,coffee
+Ground Coffee,Walmart,,,unit,coffee
+"Kroger Premium Blend Ground Coffee, Medium Roast",Ruler,,,unit,coffee
+Countryside Creamery Salted Butter Quarters,Aldi,,,unit,butter sticks
+Salted Butter Sticks,Kroger,,,unit,butter sticks
+"Great Value Sweet Cream Unsalted Butter, 16 oz",Walmart,,,unit,butter sticks
+Kroger Salted Butter,Ruler,,,unit,butter sticks
+Bake House Creations Cinnamon Rolls with Icing,Aldi,,,unit,cinnamon rolls
+Cinnamon Rolls with Icing,Kroger,,,unit,cinnamon rolls
+"Great Value Original Cinnamon Rolls with Icing, 8 Count",Walmart,,,unit,cinnamon rolls
+Kroger Cinnamon Rolls with Icing,Ruler,,,unit,cinnamon rolls
+Goldhen Grade A Large Eggs,Aldi,,,unit,eggs
+Large White Eggs,Kroger,,,unit,eggs
+"Great Value Large White Eggs, 12 Count",Walmart,,,unit,eggs
+Kroger Large Eggs,Ruler,,,unit,eggs
+Happy Farms Shredded Mild Cheddar Cheese,Aldi,,,unit,shredded cheese
+Kroger Shredded Sharp Cheddar Cheese,Kroger,,,unit,shredded cheese
+"Great Value Finely Shredded Sharp Cheddar Cheese, 16 oz",Walmart,,,unit,shredded cheese
+Kroger Shredded Sharp Cheddar Cheese,Ruler,,,unit,shredded cheese
+Coca-Cola Coke Fridge Pack,Aldi,,,unit,pop
+Pop,Kroger,,,unit,pop
+"Coca-Cola Soda Soft Drink, 12 fl oz, 12 Pack",Walmart,,,unit,pop
+Coca-Cola Coke Fridge Pack,Ruler,,,unit,pop
+PurAqua Natural Spring Water,Aldi,,,unit,water
+Water - 24pk,Kroger,,,unit,water
+"Great Value Purified Drinking Water, 16.9 Fl Oz, 24 Count",Walmart,,,unit,water
+Kroger Purified Drinking Water 24-Pack,Ruler,,,unit,water
+Season's Choice Steam Cut Green Beans,Aldi,,,unit,frozen veggies
+Frozen veggies,Kroger,,,unit,frozen veggies
+"Great Value Cut Green Beans, 12 oz (Frozen)",Walmart,,,unit,frozen veggies
+Kroger Mixed Vegetables,Ruler,,,unit,frozen veggies
+Mama Cozzi Pepp Pizza Snacks 90ct,Aldi,,,unit,pizza rolls
+Pepperoni Pizza Snack Rolls,Kroger,,,unit,pizza rolls
+"Totino's Pizza Rolls, Pepperoni Flavored, Frozen Snacks, 48.85 oz, 100 ct",Walmart,,,unit,pizza rolls
+"Kroger Pizza Snack Rolls, Combination, Sausage & Pepperoni",Ruler,,,unit,pizza rolls
+Kirkwood Fresh Chicken Breasts,Aldi,,,unit,chicken breast
+Chicken Breast,Kroger,,,unit,chicken breast
+"Tyson All Natural, Fresh, Boneless, Skinless Chicken Breast",Walmart,,,unit,chicken breast
+Heritage Farm Boneless Skinless Chicken Breasts,Ruler,,,unit,chicken breast
+Italian Mild Sausage,Aldi,,,unit,sausage
+Sausage,Kroger,,,unit,sausage
+"Great Value Original Bratwurst, 5 Links, 1 lb 3",Walmart,,,unit,sausage
+Kroger Bratwurst Sausage,Ruler,,,unit,sausage

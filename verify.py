@@ -1,0 +1,16 @@
+import pandas as pd
+df = pd.read_csv("data/processed/combined.csv")
+print("=== PROCESSED DATASET SUMMARY ===")
+print(f"Total rows      : {len(df):,}")
+print(f"Columns         : {list(df.columns)}")
+print(f"Stores          : {sorted(df['store'].unique())}")
+print(f"Categories      : {df['category'].nunique()} unique")
+print(f"NaN unit_price  : {df['unit_price'].isna().sum()}")
+print()
+print("=== STORE COMPARISON (avg unit price $/g) ===")
+s = df[df["unit_price"].notna()].groupby("store")["unit_price"].agg(["mean","min","count"])
+s.columns = ["avg_$/g", "min_$/g", "products"]
+print(s.to_string())
+print()
+print("=== SAMPLE ROWS ===")
+print(df[["product_name","store","price","unit_price","canonical_unit","category"]].head(8).to_string(index=False))
