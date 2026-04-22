@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import './index.css'
 
-const API_BASE = ''
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const UNITS = ['kg', 'lb', 'oz', 'g', 'L', 'mL', 'unit', 'pack', 'dozen']
 const STORES = ['Aldi', 'Walmart', 'Target', 'Costco', 'Whole Foods', 'Kroger']
 const PAGE_SIZE = 6  // how many results to show before the "show more" button
