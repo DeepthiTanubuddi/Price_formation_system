@@ -301,6 +301,11 @@ def smart_search(df: pd.DataFrame, query: str, limit: int = 50) -> pd.DataFrame:
 
 # ── API endpoints ─────────────────────────────────────────────────────────────
 
+@app.get("/")
+def read_root():
+    """Health check endpoint for Render.com"""
+    return {"status": "ok", "message": "Price Formation API is running"}
+
 @app.get("/api/products")
 def get_products(
     page:  int = Query(1,  ge=1),
