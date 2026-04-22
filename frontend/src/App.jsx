@@ -126,6 +126,14 @@ const UNSPLASH_PHOTOS = {
   default:    ['1542838132-92c53300491e', '1506368083636-6defb67639cd', '1473093226511-05552bbeb3b3'],
 }
 
+function hasImageMatch(text, key) {
+  const exactOnly = ['egg', 'rice', 'tea', 'oat', 'oil', 'nut']
+  if (exactOnly.includes(key)) {
+    return new RegExp(`\\b${key}s?\\b`).test(text)
+  }
+  return text.includes(key)
+}
+
 function getProductImageUrl(product = {}) {
   // if the server already sent us a real image URL, just use it directly
   if (
@@ -143,7 +151,7 @@ function getProductImageUrl(product = {}) {
   let bestLen = 0
   for (const key of Object.keys(UNSPLASH_PHOTOS)) {
     if (key === 'default') continue
-    if (text.includes(key) && key.length > bestLen) {
+    if (hasImageMatch(text, key) && key.length > bestLen) {
       bestKey = key
       bestLen = key.length
     }
@@ -160,24 +168,24 @@ function getProductImageUrl(product = {}) {
 
 function getProductEmoji(product = {}) {
   const text = `${product.product_name || ''} ${product.category || ''}`.toLowerCase()
-  if (text.includes('milk') || text.includes('yogurt')) return '🥛'
-  if (text.includes('rice') || text.includes('grain') || text.includes('pasta')) return '🌾'
-  if (text.includes('egg')) return '🥚'
-  if (text.includes('bread') || text.includes('bagel')) return '🍞'
-  if (text.includes('coffee')) return '☕'
-  if (text.includes('tea')) return '🍵'
-  if (text.includes('juice') || text.includes('drink')) return '🧃'
-  if (text.includes('cheese')) return '🧀'
-  if (text.includes('chicken') || text.includes('meat') || text.includes('beef')) return '🥩'
-  if (text.includes('fruit') || text.includes('produce') || text.includes('apple')) return '🍎'
-  if (text.includes('vegetable') || text.includes('broccoli')) return '🥦'
-  if (text.includes('cookie') || text.includes('snack') || text.includes('chip')) return '🍪'
-  if (text.includes('fish') || text.includes('salmon') || text.includes('shrimp')) return '🐟'
-  if (text.includes('chocolate') || text.includes('candy')) return '🍫'
-  if (text.includes('soup')) return '🍲'
-  if (text.includes('salad')) return '🥗'
-  if (text.includes('pizza')) return '🍕'
-  if (text.includes('butter')) return '🧈'
+  if (hasImageMatch(text, 'milk') || hasImageMatch(text, 'yogurt')) return '🥛'
+  if (hasImageMatch(text, 'rice') || hasImageMatch(text, 'grain') || hasImageMatch(text, 'pasta')) return '🌾'
+  if (hasImageMatch(text, 'egg')) return '🥚'
+  if (hasImageMatch(text, 'bread') || hasImageMatch(text, 'bagel')) return '🍞'
+  if (hasImageMatch(text, 'coffee')) return '☕'
+  if (hasImageMatch(text, 'tea')) return '🍵'
+  if (hasImageMatch(text, 'juice') || hasImageMatch(text, 'drink')) return '🧃'
+  if (hasImageMatch(text, 'cheese')) return '🧀'
+  if (hasImageMatch(text, 'chicken') || hasImageMatch(text, 'meat') || hasImageMatch(text, 'beef')) return '🥩'
+  if (hasImageMatch(text, 'fruit') || hasImageMatch(text, 'produce') || hasImageMatch(text, 'apple')) return '🍎'
+  if (hasImageMatch(text, 'vegetable') || hasImageMatch(text, 'broccoli')) return '🥦'
+  if (hasImageMatch(text, 'cookie') || hasImageMatch(text, 'snack') || hasImageMatch(text, 'chip')) return '🍪'
+  if (hasImageMatch(text, 'fish') || hasImageMatch(text, 'salmon') || hasImageMatch(text, 'shrimp')) return '🐟'
+  if (hasImageMatch(text, 'chocolate') || hasImageMatch(text, 'candy')) return '🍫'
+  if (hasImageMatch(text, 'soup')) return '🍲'
+  if (hasImageMatch(text, 'salad')) return '🥗'
+  if (hasImageMatch(text, 'pizza')) return '🍕'
+  if (hasImageMatch(text, 'butter')) return '🧈'
   return '🛒'
 }
 
