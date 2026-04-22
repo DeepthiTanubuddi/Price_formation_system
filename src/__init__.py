@@ -1,7 +1,8 @@
 """
 price_formation_system.src
-==========================
-Source package for CSCE 5200 Group 7 – IR & NLP-Based Price Formation System.
+--------------------------
+Source package for the SmartCompare Price Formation System.
+CSCE 5200 - Group 7
 """
 
 __version__ = "0.1.0"

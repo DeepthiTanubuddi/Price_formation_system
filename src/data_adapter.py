@@ -1,28 +1,22 @@
 """
 data_adapter.py
-===============
-Adapts the two real-world datasets (GroceryDB_foods.csv and Item_List.csv)
-into the standard price_formation_system schema before pipeline processing.
+---------------
+Converts our real-world source files into the standard schema used by the
+rest of the pipeline.
+CSCE 5200 - Group 7
 
-CSCE 5200 – Group 7
+Source files:
+  GroceryDB_foods.csv — scraped grocery product data from Walmart, Target, and Whole Foods.
+    Relevant columns: name, store, price, package_weight (grams), harmonized category.
+    The store is encoded in the original_ID prefix: tg_ = Target, wf_ = Whole Foods, wm_ = Walmart.
 
-Source schemas
---------------
-GroceryDB_foods.csv columns (relevant):
-    name, store, price, package_weight (grams), harmonized single category
-    IDs prefixed: tg_ = Target, wf_ = WholeFoods, wm_ = Walmart
+  Item_List.csv — wide-format product list with one column per store.
+    Columns: Category, Aldi-Item, Aldi-Link, Aldi-Multiplier, Kroger-Item, ...
+    No prices — this file is only used for category and product name enrichment.
 
-Item_List.csv columns (wide format, one row per product):
-    Category,
-    Aldi-Item, Aldi-Link, Aldi-Multiplier,
-    Kroger-Item, Kroger-Link, Kroger-Multiplier,
-    Walmart-Item, Walmart-Link, Walmart-Multiplier,
-    Ruler-Item, Ruler-Link, Ruler-Multiplier
-    (no price – used for category/product name enrichment only)
-
-Target output schema:
-    product_name (str), store (str), price (float),
-    quantity (float), unit (str), category (str)
+Target schema for both sources:
+  product_name (str), store (str), price (float),
+  quantity (float), unit (str), category (str)
 """
 
 from __future__ import annotations
@@ -36,18 +30,14 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Store-prefix → canonical store name map (from GroceryDB original_ID)
-# ---------------------------------------------------------------------------
+# Maps GroceryDB original_ID prefixes to human-readable store names.
 _ID_PREFIX_STORE: dict[str, str] = {
     "tg_": "Target",
     "wf_": "WholeFoods",
     "wm_": "Walmart",
 }
 
-# ---------------------------------------------------------------------------
-# GroceryDB category → our simplified category map
-# ---------------------------------------------------------------------------
+# Maps GroceryDB category slugs to our simplified category labels.
 _CATEGORY_MAP: dict[str, str] = {
     "baby-food":       "baby-food",
     "baking":          "baking",
@@ -87,22 +77,18 @@ _CATEGORY_MAP: dict[str, str] = {
     "yogurt":          "dairy",
 }
 
-# ---------------------------------------------------------------------------
-# Liquid category / keyword detection
-# GroceryDB stores ALL package quantities in grams (even for liquids).
-# For liquids, 1 fl oz ≈ 29.57 ml was used, so the "gram" value is actually
-# the weight equivalent. We treat liquid quantities as ml (density ≈ 1 g/mL
+# GroceryDB stores all package quantities in grams, even for liquids.
+# For liquid products we treat the gram value as ml (density ≈ 1 g/mL
 # for water-based products — close enough for price comparison).
-# ---------------------------------------------------------------------------
 
-# Categories that are always liquid (use ml)
+# Categories that are definitely liquids.
 _LIQUID_CATEGORIES: frozenset[str] = frozenset({
     "beverages", "drink-juice", "drink-juice-wf", "drink-water-wf",
     "drink-soft-energy-mixes", "drink-coffee", "drink-tea",
     "drink-shakes-other", "milk-milk-substitute", "dairy-yogurt-drink",
 })
 
-# Name substrings that indicate liquid regardless of category
+# Product name keywords that imply a liquid regardless of category.
 _LIQUID_NAME_KEYWORDS: tuple[str, ...] = (
     " milk ", " milk,", " milk-", "whole milk", "skim milk", "2% milk",
     "1% milk", "fat free milk", "almond milk", "oat milk", "soy milk",
@@ -118,7 +104,7 @@ _LIQUID_NAME_KEYWORDS: tuple[str, ...] = (
     "mouthwash", "hand soap", "dish soap", "laundry detergent",
 )
 
-# Categories that are ALWAYS solid (force g even if name has ambiguous keywords)
+# Categories that are always solid (force grams even if the name looks ambiguous).
 _SOLID_CATEGORIES: frozenset[str] = frozenset({
     "baking", "bread", "breakfast", "snacks-chips", "snacks-bars",
     "snacks-mixes-crackers", "snacks-nuts-seeds", "snacks-popcorn",
@@ -132,18 +118,16 @@ _SOLID_CATEGORIES: frozenset[str] = frozenset({
 
 
 def _is_liquid(category: str, product_name: str) -> bool:
-    """Return True if the product is likely a liquid (should use ml not g)."""
+    """Return True if the product is likely a liquid (should use ml instead of g)."""
     cat = (category or "").lower().strip()
 
-    # Fast path: explicitly solid category
     if cat in _SOLID_CATEGORIES:
         return False
 
-    # Fast path: explicitly liquid category
     if cat in _LIQUID_CATEGORIES:
         return True
 
-    # Name-based heuristic (case-insensitive)
+    # Fall back to name-based heuristic when category is ambiguous.
     name_lower = (" " + (product_name or "").lower() + " ")
     for kw in _LIQUID_NAME_KEYWORDS:
         if kw in name_lower:
@@ -151,39 +135,33 @@ def _is_liquid(category: str, product_name: str) -> bool:
 
     return False
 
-# ---------------------------------------------------------------------------
-# Helper: strip HTML entities from GroceryDB product names
-# ---------------------------------------------------------------------------
+
+# Regex for stripping HTML entities that occasionally appear in GroceryDB product names.
 _HTML_ENTITY_RE = re.compile(r"&#?\w+;")
 
 def _clean_html_entities(text: str) -> str:
-    """Replace common HTML entities with ASCII equivalents."""
+    """Replace common HTML entities with their ASCII equivalents."""
     text = text.replace("&#39;", "'").replace("&#38;", "&").replace("&#8482;", "")
     text = text.replace("&#8211;", "-").replace("&#8212;", "-")
     return _HTML_ENTITY_RE.sub("", text).strip()
 
 
-# ===========================================================================
-# 1. Adapt GroceryDB_foods.csv
-# ===========================================================================
-
 def adapt_grocerydb(filepath: str, max_rows: int | None = None) -> pd.DataFrame:
-    """Convert GroceryDB_foods.csv → standard schema.
+    """Convert GroceryDB_foods.csv to our standard schema.
 
-    Strategy
-    --------
-    * ``package_weight`` is already in **grams** – use it as ``quantity`` with
-      ``unit = "g"``.
-    * Derive ``store`` from the ``original_ID`` prefix (tg_, wf_, wm_).
-    * Filter out rows where ``price`` is missing (cannot compute unit price).
-    * Limit to ``max_rows`` if provided (useful for faster testing).
+    Strategy:
+    - package_weight is in grams, so we use it as the quantity with unit = "g".
+    - For liquids we use "ml" instead (1 g ≈ 1 ml for water-based products).
+    - We derive the store name from the original_ID prefix (tg_, wf_, wm_).
+    - We drop rows with a missing price or weight since we can't compute a unit price for them.
+    - We apply the max_rows cap when provided (useful for fast test runs).
 
     Parameters
     ----------
     filepath : str
         Path to GroceryDB_foods.csv.
     max_rows : int, optional
-        If set, only the first ``max_rows`` valid rows are returned.
+        Only keep the first N valid rows. Useful for faster testing.
 
     Returns
     -------
@@ -193,14 +171,12 @@ def adapt_grocerydb(filepath: str, max_rows: int | None = None) -> pd.DataFrame:
     logger.info("Adapting GroceryDB from: %s", filepath)
     raw = pd.read_csv(filepath, dtype=str, low_memory=False)
 
-    # Rename to working names
     raw = raw.rename(columns={
         "name":                       "product_name",
         "harmonized single category": "category",
         "package_weight":             "quantity",
     })
 
-    # Derive store from original_ID prefix
     def _store_from_id(orig_id: str) -> str:
         if isinstance(orig_id, str):
             for prefix, store in _ID_PREFIX_STORE.items():
@@ -210,21 +186,17 @@ def adapt_grocerydb(filepath: str, max_rows: int | None = None) -> pd.DataFrame:
 
     raw["store"] = raw["original_ID"].apply(_store_from_id)
 
-    # Keep only rows whose store is known
+    # Remove any rows where we couldn't identify the store.
     raw = raw[raw["store"] != "Unknown"].copy()
 
-    # Coerce numerics
     raw["price"]    = pd.to_numeric(raw["price"],    errors="coerce")
     raw["quantity"] = pd.to_numeric(raw["quantity"], errors="coerce")
 
-    # Drop rows with no price or no weight (can't compute unit price)
+    # We need both price and quantity to compute a unit price.
     raw = raw.dropna(subset=["price", "quantity"])
     raw = raw[raw["price"] > 0]
     raw = raw[raw["quantity"] > 0]
 
-    # Set unit: use ml for liquids, g for solids.
-    # GroceryDB stores all weights as grams, but for liquids the value is
-    # effectively the volume in ml (water density ≈ 1 g/mL).
     raw["unit"] = raw.apply(
         lambda row: "ml" if _is_liquid(
             str(row.get("category", "")),
@@ -233,16 +205,13 @@ def adapt_grocerydb(filepath: str, max_rows: int | None = None) -> pd.DataFrame:
         axis=1,
     )
 
-    # Map category
     raw["category"] = raw["category"].fillna("other").str.strip().str.lower()
     raw["category"] = raw["category"].map(_CATEGORY_MAP).fillna(raw["category"])
 
-    # Clean HTML entities from product names
     raw["product_name"] = raw["product_name"].apply(
         lambda x: _clean_html_entities(str(x)) if isinstance(x, str) else x
     )
 
-    # Select & standardise columns
     out = raw[["product_name", "store", "price", "quantity", "unit", "category"]].copy()
     out = out.reset_index(drop=True)
 
@@ -257,17 +226,13 @@ def adapt_grocerydb(filepath: str, max_rows: int | None = None) -> pd.DataFrame:
     return out
 
 
-# ===========================================================================
-# 2. Adapt Item_List.csv
-# ===========================================================================
-
 def adapt_item_list(filepath: str) -> pd.DataFrame:
-    """Convert wide-format Item_List.csv → standard schema.
+    """Convert wide-format Item_List.csv to our standard schema.
 
-    The Item_List has no price column; it is used only to enrich the
-    product/category dimension.  We pivot it to long format and assign
-    placeholder prices of NaN so that rows appear in the merged dataset
-    but are excluded from unit-price ranking until prices are scraped.
+    The Item_List file has no prices — it's used purely to enrich the
+    product/category dimension. We pivot it to long format and set
+    price/quantity to NaN as placeholders. These rows appear in the merged
+    dataset but are excluded from unit price ranking since they have no prices.
 
     Parameters
     ----------
@@ -277,7 +242,7 @@ def adapt_item_list(filepath: str) -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame
-        Standard-schema DataFrame (unit_price will be NaN for these rows).
+        Standard-schema DataFrame (unit_price will be NaN for all these rows).
     """
     logger.info("Adapting Item_List from: %s", filepath)
     raw = pd.read_csv(filepath, dtype=str)
@@ -287,11 +252,10 @@ def adapt_item_list(filepath: str) -> pd.DataFrame:
 
     for _, row in raw.iterrows():
         category_raw = str(row.get("Category", "")).strip()
-        # Parse category name (strip size hint in parentheses for the name)
         cat_name = re.sub(r"\s*\(.*?\)", "", category_raw).strip().lower()
 
         for store in stores:
-            item_col = f"{store}-Item"
+            item_col  = f"{store}-Item"
             item_name = str(row.get(item_col, "")).strip()
             if not item_name or item_name.lower() in ("nan", ""):
                 continue
@@ -302,7 +266,7 @@ def adapt_item_list(filepath: str) -> pd.DataFrame:
                     "store":        store,
                     "price":        float("nan"),   # no price in source
                     "quantity":     float("nan"),   # no quantity in source
-                    "unit":         "unit",         # discrete unit placeholder
+                    "unit":         "unit",         # placeholder
                     "category":     cat_name,
                 }
             )
@@ -311,10 +275,6 @@ def adapt_item_list(filepath: str) -> pd.DataFrame:
     logger.info("Item_List adapter: %d rows generated.", len(out))
     return out
 
-
-# ===========================================================================
-# 3. Build adapted combined CSV
-# ===========================================================================
 
 def build_adapted_datasets(
     grocerydb_path: str,
@@ -328,9 +288,9 @@ def build_adapted_datasets(
     grocerydb_path : str
         Path to GroceryDB_foods.csv.
     item_list_path : str, optional
-        Path to Item_List.csv.  If None or file absent, returns empty DataFrame.
+        Path to Item_List.csv. If None or the file is missing, returns an empty DataFrame.
     max_grocerydb_rows : int, optional
-        Cap GroceryDB rows (default: all).
+        Cap the number of GroceryDB rows (default: all rows).
 
     Returns
     -------
@@ -341,14 +301,12 @@ def build_adapted_datasets(
     if item_list_path and Path(item_list_path).exists():
         itl = adapt_item_list(item_list_path)
     else:
-        logger.info("Item_List path not provided or not found – skipping.")
+        logger.info("Item_List path not provided or not found — skipping.")
         itl = pd.DataFrame()
     return gdb, itl
 
 
-# ---------------------------------------------------------------------------
-# CLI: python -m src.data_adapter
-# ---------------------------------------------------------------------------
+# Run directly to inspect a quick sample of both adapted outputs.
 if __name__ == "__main__":
     import sys
 
