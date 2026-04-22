@@ -151,6 +151,15 @@ def _product_search_url(product_name: str, store: str) -> str:
     return config["search_url"].format(query=query)
 
 
+def _has_image_match(text: str, key: str) -> bool:
+    """Use word boundaries for short keywords to prevent 'egg' matching 'veggie'."""
+    exact_only = {"egg", "rice", "tea", "oat", "oil", "nut"}
+    if key in exact_only:
+        import re
+        return bool(re.search(r"\b" + key + r"s?\b", text))
+    return key in text
+
+
 def _pick_photo_id(product_name: str, category: str | None) -> str:
     """Pick a deterministic Unsplash photo ID based on the product name and category.
 
@@ -164,7 +173,7 @@ def _pick_photo_id(product_name: str, category: str | None) -> str:
     for key in _CATEGORY_PHOTOS:
         if key == "default":
             continue
-        if key in text:
+        if _has_image_match(text, key):
             if len(key) > best_score:
                 best_score = len(key)
                 best_key   = key
@@ -191,14 +200,14 @@ def enrich_catalog_metadata(df: pd.DataFrame) -> pd.DataFrame:
     """
     enriched = df.copy()
 
+    # Force regenerate all images to fix the 'veggie' bug cached in CSV
+    enriched["image_url"] = None
+
     if "product_url" not in enriched.columns:
         enriched["product_url"] = None
-    if "image_url" not in enriched.columns:
-        enriched["image_url"] = None
 
     missing_links = enriched["product_url"].isna() | (enriched["product_url"].astype(str).str.strip() == "")
 
-    # Always regenerate image_url so old SVG placeholders get replaced.
     missing_images = (
         enriched["image_url"].isna()
         | (enriched["image_url"].astype(str).str.strip() == "")
