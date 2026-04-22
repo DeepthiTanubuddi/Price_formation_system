@@ -198,16 +198,97 @@ function calcSavings(sortedResults) {
   return pct > 0 ? { pct } : null
 }
 
-async function fetchSearch(query, limit = 50) {
-  const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(query)}&limit=${limit}`)
-  if (!res.ok) throw new Error('Search failed')
-  return res.json()
+// ── Client-side data store ───────────────────────────────────────────────────
+let _productsCache = null
+
+async function loadProducts() {
+  if (_productsCache) return _productsCache
+  const base = import.meta.env.BASE_URL || '/'
+  const res = await fetch(`${base}products.json`)
+  if (!res.ok) throw new Error('Failed to load products.json')
+  _productsCache = await res.json()
+  return _productsCache
 }
 
-async function fetchStoreHighlights(store, limit = 5) {
-  const res = await fetch(`${API_BASE}/api/stores/${encodeURIComponent(store)}/highlights?limit=${limit}`)
-  if (!res.ok) throw new Error('Store highlights failed')
-  return res.json()
+// ── Domain detection (mirrors server.py) ─────────────────────────────────────
+const LIQUID_WORDS = new Set(['milk','juice','water','soda','oil','vinegar','broth','stock',
+  'cream','kefir','kombucha','lemonade','tea','coffee','beer','wine','yogurt',
+  'smoothie','shake','drink','beverage','syrup','sauce','soup'])
+const SOLID_WORDS  = new Set(['rice','flour','sugar','salt','cereal','oats','pasta','bread',
+  'cracker','chip','cookie','cake','muffin','bagel','nut','seed','bean','lentil',
+  'pepper','spice','herb','eggs','butter','cheese','meat','chicken','beef','pork',
+  'fish','shrimp','salmon','tuna'])
+const MODIFIER_WORDS_AFTER = { milk: ['thistle','chocolate','morsels','frosting','powder','based','derived','flavored','flavoured'] }
+
+function queryDomain(q) {
+  if (LIQUID_WORDS.has(q)) return 'liquid'
+  if (SOLID_WORDS.has(q))  return 'solid'
+  return 'any'
+}
+
+function isFalsePositive(nameLower, q) {
+  const mods = MODIFIER_WORDS_AFTER[q] || []
+  return mods.some((mod) => new RegExp(`\\b${q}\\s+${mod}`).test(nameLower))
+}
+
+function relevanceScore(name, canonicalUnit, q, domain) {
+  const nl  = name.toLowerCase().trim()
+  const wbRe = new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`, 'i')
+  if (!wbRe.test(nl)) return 0
+  if (isFalsePositive(nl, q)) return 1
+  const isLiquid = canonicalUnit === 'L'
+  const isSolid  = canonicalUnit === '100g' || canonicalUnit === 'kg'
+  const domainMatch = (domain === 'liquid' && isLiquid) || (domain === 'solid' && isSolid) || domain === 'any'
+  const domainMismatch = !domainMatch && domain !== 'any'
+  const words = nl.match(/[a-z]+/g) || []
+  const isPrimary = (words.length && (words[words.length-1] === q || words[0] === q))
+    || new RegExp(`\\b${q}\\b\\s*([-–]|\\d|$)`).test(nl)
+  if (isPrimary && domainMatch) return 5
+  if (isPrimary) return 4
+  if (domainMatch) return 4
+  if (domainMismatch) return 2
+  return 3
+}
+
+function clientSearch(products, query, limit = 50) {
+  const q      = query.toLowerCase().trim()
+  const domain = queryDomain(q)
+  const wbRe   = new RegExp(`\\b${q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}\\b`, 'i')
+  let matched  = products.filter((p) => wbRe.test((p.product_name||'').toLowerCase()))
+  if (!matched.length) {
+    matched = products.filter((p) => (p.product_name||'').toLowerCase().includes(q))
+  }
+  matched = matched.map((p) => ({
+    ...p,
+    _rel: relevanceScore(p.product_name||'', p.canonical_unit||'', q, domain),
+  }))
+  const maxScore = Math.max(0, ...matched.map((p) => p._rel))
+  if (maxScore >= 3) matched = matched.filter((p) => p._rel >= 2)
+  matched.sort((a,b) => b._rel - a._rel || (a.unit_price||Infinity) - (b.unit_price||Infinity))
+  return matched.slice(0, limit).map(({_rel, ...p}) => p)
+}
+
+const STAPLE_KEYWORDS = ['milk','rice','egg','bread','pasta','cereal','coffee','tea',
+  'juice','water','chicken','beef','cheese','butter','fruit','vegetable','produce',
+  'snack','yogurt','oat','flour','sugar']
+
+function clientStoreHighlights(products, store, limit = 5) {
+  const storeKey = store.toLowerCase().replace(/\s+/g,'')
+  let scoped = products.filter((p) =>
+    (p.store||'').toLowerCase().replace(/\s+/g,'') === storeKey && p.unit_price != null)
+  scoped = scoped.map((p) => {
+    const text = `${p.category||''} ${p.product_name||''}`.toLowerCase()
+    const score = STAPLE_KEYWORDS.filter((kw) => text.includes(kw)).length
+    return { ...p, _staple: score }
+  })
+  scoped.sort((a,b) => b._staple - a._staple || (a.unit_price||Infinity) - (b.unit_price||Infinity))
+  const seen = new Set()
+  const out  = []
+  for (const p of scoped) {
+    if (!seen.has(p.product_name)) { seen.add(p.product_name); out.push(p) }
+    if (out.length >= limit) break
+  }
+  return out.map(({_staple,...p}) => p)
 }
 
 function SparkIcon() {
@@ -972,7 +1053,6 @@ export default function App() {
   const [searchUnit, setSearchUnit] = useState('kg')
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
-  const [apiError, setApiError] = useState(false)
   const [cartItems, setCartItems] = useState([])
   const [homeStore, setHomeStore] = useState('Walmart')
   const [homeSpotlightItems, setHomeSpotlightItems] = useState([])
@@ -993,20 +1073,15 @@ export default function App() {
       setView('landing')
       return
     }
-
     setSearchQuery(query)
     setSearchUnit(unit || 'kg')
     setView('results')
     setLoading(true)
     setResults([])
-    setApiError(false)
-
     try {
-      const data = await fetchSearch(query, 50)
-      setResults(data.data || [])
-    } catch {
-      setApiError(true)
-      setResults(DEMO_DATA)
+      const products = await loadProducts()
+      const found    = clientSearch(products, query, 50)
+      setResults(found)
     } finally {
       setLoading(false)
     }
@@ -1014,25 +1089,17 @@ export default function App() {
 
   useEffect(() => {
     if (!homeStore || view !== 'landing') return
-
     let active = true
     setHomeSpotlightLoading(true)
-
-    fetchStoreHighlights(homeStore, 5)
-      .then((payload) => {
+    loadProducts()
+      .then((products) => {
         if (!active) return
-        setHomeSpotlightItems(payload.data || [])
-        setHomeSpotlightNote(payload.note || '')
+        const items = clientStoreHighlights(products, homeStore, 5)
+        setHomeSpotlightItems(items)
+        setHomeSpotlightNote('Best-seller picks are inferred from staple-category relevance and value.')
       })
-      .catch(() => {
-        if (!active) return
-        setHomeSpotlightItems(DEMO_DATA.slice(0, 4))
-        setHomeSpotlightNote('Fallback spotlight is being shown because the API could not return store-specific products.')
-      })
-      .finally(() => {
-        if (active) setHomeSpotlightLoading(false)
-      })
-
+      .catch(() => { if (active) setHomeSpotlightItems([]) })
+      .finally(() => { if (active) setHomeSpotlightLoading(false) })
     return () => { active = false }
   }, [homeStore, view])
 
@@ -1119,17 +1186,12 @@ export default function App() {
           onAddToCart={addToCart}
         />
       )}
-
-      {apiError ? (
-        <div className="demo-banner">
-          Demo mode — API unreachable. Showing fallback products.
-        </div>
-      ) : null}
     </div>
   )
 }
 
-const DEMO_DATA = [
+// DEMO_DATA removed — app now uses real products.json client-side search
+const _unused = [
   {
     product_name: 'Great Value Whole Milk 1 Gallon',
     store: 'Walmart',
